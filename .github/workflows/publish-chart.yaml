@@ -23,7 +23,7 @@ jobs:
       - name: Update Chart Version
         run: |
           # Update Chart.yaml with the tag version
-          sed -i "s/^version:.*/version: ${{ inputs.CHART_VERSION }}/" charts/Chart.yaml
+          sed -i "s/^version:.*/version: ${{ inputs.chart_version }}/" charts/Chart.yaml
 
       - name: Package and Push Helm Chart
         run: |
@@ -34,4 +34,5 @@ jobs:
           CHART_NAME=$(helm show chart charts/ | grep '^name:' | awk '{print $2}')
           
           # Push to GitHub Container Registry
-          helm push ${CHART_NAME}-${{ inputs.CHART_VERSION }}.tgz oci://ghcr.io/${{ github.repository_owner }}
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          helm push ${CHART_NAME}-${{ inputs.chart_version }}.tgz oci://ghcr.io/${REPO_OWNER}
