@@ -1,0 +1,57 @@
+on:
+  workflow_call:
+    inputs:
+      chart_registry:
+        description: "OCI registry URL for the Helm chart"
+        required: true
+        type: string
+      helm_sets:
+        description: "Helm --set arguments (e.g. --set key1=val1 --set key2=val2)"
+        required: false
+        type: string
+        default: ''
+      release_name:
+        description: "Helm release name"
+        required: true
+        type: string
+      namespace:
+        description: "Kubernetes namespace"
+        required: true
+        type: string
+      cluster_name:
+        description: "DigitalOcean cluster name"
+        required: true
+        type: string
+    secrets:
+      digitalocean_token:
+        description: "DigitalOcean API access token"
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.digitalocean_token }}
+
+      - name: Save kubeconfig
+        run: doctl kubernetes cluster kubeconfig save ${{ inputs.cluster_name }}
+
+      - name: Deploy Helm chart
+        run: |
+          helm upgrade --install ${{ inputs.release_name }} ${{ inputs.chart_registry }} \
+            ${{ inputs.helm_sets }} \
+            --namespace ${{ inputs.namespace }} \
+            --create-namespace \
+            --timeout 10m \
+            --wait
+
